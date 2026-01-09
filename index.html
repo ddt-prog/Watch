@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مشغل روابط الماجنت</title>
+    <style>
+        body { font-family: sans-serif; background: #1a1a1a; color: white; text-align: center; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: #2d2d2d; padding: 20px; border-radius: 10px; }
+        input { width: 80%; padding: 10px; border-radius: 5px; border: none; margin-bottom: 10px; }
+        button { padding: 10px 20px; background: #27ae60; color: white; border: none; cursor: pointer; border-radius: 5px; }
+        #status { margin: 20px 0; color: #f1c40f; }
+        #output video { width: 100%; margin-top: 20px; border: 2px solid #444; }
+        .log { font-size: 12px; color: #aaa; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🚀 مشغل الماجنت السريع</h2>
+    <p>أدخل رابط الماجنت (Magnet Link) للبدء في المشاهدة أو التحميل</p>
+    
+    <input type="text" id="magnetInput" placeholder="ضع رابط الماجنت هنا...">
+    <br>
+    <button onclick="startDownload()">تشغيل / تحميل</button>
+
+    <div id="status">انتظار الأمر...</div>
+    
+    <div id="output"></div>
+    
+    <div id="log" class="log"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/webtorrent@latest/webtorrent.min.js"></script>
+
+<script>
+    const client = new WebTorrent();
+
+    function startDownload() {
+        const magnetURI = document.getElementById('magnetInput').value;
+        const status = document.getElementById('status');
+        const output = document.getElementById('output');
+
+        if (!magnetURI) {
+            alert("يرجى وضع رابط صحيح!");
+            return;
+        }
+
+        status.innerHTML = "جاري الاتصال بالأجهزة (Peers)... يرجى الانتظار";
+        output.innerHTML = ""; // تنظيف المخرجات السابقة
+
+        client.add(magnetURI, function (torrent) {
+            status.innerHTML = `جاري التحميل: ${torrent.name}`;
+            
+            // البحث عن ملف فيديو لتشغيله تلقائياً
+            const file = torrent.files.find(function (file) {
+                return file.name.endsWith('.mp4') || file.name.endsWith('.mkv') || file.name.endsWith('.webm');
+            });
+
+            if (file) {
+                // عرض الفيديو في الصفحة
+                file.appendTo('#output', { autoplay: true, muted: false });
+            }
+
+            // تحديث الإحصائيات كل ثانية
+            torrent.on('download', function (bytes) {
+                status.innerHTML = `
+                    <b>جاري التحميل:</b> ${torrent.name} <br>
+                    <b>السرعة:</b> ${(torrent.downloadSpeed / 1024 / 1024).toFixed(2)} MB/s <br>
+                    <b>التقدم:</b> ${(torrent.progress * 100).toFixed(2)}%
+                `;
+            });
+        });
+    }
+
+    // معالجة الأخطاء
+    client.on('error', function (err) {
+        console.error('Error:', err.message);
+        document.getElementById('status').innerHTML = "خطأ: " + err.message;
+    });
+</script>
+
+</body>
+</html>
